@@ -1,0 +1,515 @@
+{
+  "email": {
+    "task": "email",
+    "held_out_count": 2623,
+    "threshold": 0.5,
+    "precision": 0.9568,
+    "recall": 0.9841,
+    "f1": 0.9703,
+    "confusion_matrix": {
+      "true_negative": 2294,
+      "false_positive": 14,
+      "false_negative": 5,
+      "true_positive": 310
+    },
+    "false_positive_rate": 0.0061,
+    "errors": {
+      "false_positives": [
+        {
+          "id": "9e79dbb569c25298",
+          "phishing_probability": 0.7799
+        },
+        {
+          "id": "dd7720e4f80a46ac",
+          "phishing_probability": 0.6066
+        },
+        {
+          "id": "16dbc6ecdf33cfd8",
+          "phishing_probability": 0.5733
+        },
+        {
+          "id": "d92456f3a881c4f6",
+          "phishing_probability": 0.5595
+        },
+        {
+          "id": "e6fcee12470d5e8c",
+          "phishing_probability": 0.5567
+        },
+        {
+          "id": "6bb5f12d28104d3f",
+          "phishing_probability": 0.5562
+        },
+        {
+          "id": "b7b335cdd51340a1",
+          "phishing_probability": 0.55
+        },
+        {
+          "id": "5b2eb5b27368e1d1",
+          "phishing_probability": 0.5494
+        },
+        {
+          "id": "986a4414aacb0fdd",
+          "phishing_probability": 0.5388
+        },
+        {
+          "id": "d0ec665a80636c76",
+          "phishing_probability": 0.5273
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "14eaf555244da456",
+          "phishing_probability": 0.2086
+        },
+        {
+          "id": "6e9433ea321f53cd",
+          "phishing_probability": 0.2787
+        },
+        {
+          "id": "6a3f6cf478463484",
+          "phishing_probability": 0.279
+        },
+        {
+          "id": "1883eee405fc043c",
+          "phishing_probability": 0.483
+        },
+        {
+          "id": "8faac31a311477b1",
+          "phishing_probability": 0.4936
+        }
+      ]
+    },
+    "training_count": 10491,
+    "unique_source_counts": [
+      {
+        "source": "Enron.csv",
+        "label": 0,
+        "count": 4971
+      },
+      {
+        "source": "Ling.csv",
+        "label": 0,
+        "count": 2401
+      },
+      {
+        "source": "Nazario.csv",
+        "label": 1,
+        "count": 1552
+      },
+      {
+        "source": "SpamAssasin.csv",
+        "label": 0,
+        "count": 4090
+      },
+      {
+        "source": "email_validation.csv",
+        "label": 0,
+        "count": 77
+      },
+      {
+        "source": "email_validation.csv",
+        "label": 1,
+        "count": 23
+      }
+    ],
+    "error_review": {
+      "false_positives": [
+        {
+          "id": "9e79dbb569c25298",
+          "top_model_terms": [
+            {
+              "feature": "security",
+              "contribution": 0.4363
+            },
+            {
+              "feature": "your",
+              "contribution": 0.3783
+            },
+            {
+              "feature": "view",
+              "contribution": 0.3562
+            },
+            {
+              "feature": "click",
+              "contribution": 0.2903
+            }
+          ]
+        },
+        {
+          "id": "dd7720e4f80a46ac",
+          "top_model_terms": [
+            {
+              "feature": "account",
+              "contribution": 0.4554
+            },
+            {
+              "feature": "your",
+              "contribution": 0.4274
+            },
+            {
+              "feature": "your account",
+              "contribution": 0.3935
+            },
+            {
+              "feature": "shipment",
+              "contribution": 0.1958
+            }
+          ]
+        },
+        {
+          "id": "16dbc6ecdf33cfd8",
+          "top_model_terms": [
+            {
+              "feature": "your",
+              "contribution": 1.2624
+            },
+            {
+              "feature": "dear",
+              "contribution": 0.6228
+            },
+            {
+              "feature": "your order",
+              "contribution": -0.317
+            },
+            {
+              "feature": "shipped",
+              "contribution": -0.2671
+            }
+          ]
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "14eaf555244da456",
+          "top_model_terms": [
+            {
+              "feature": "https",
+              "contribution": 0.2344
+            },
+            {
+              "feature": "or",
+              "contribution": -0.1029
+            },
+            {
+              "feature": "ug",
+              "contribution": -0.0094
+            }
+          ]
+        },
+        {
+          "id": "6e9433ea321f53cd",
+          "top_model_terms": [
+            {
+              "feature": "your",
+              "contribution": 0.3203
+            },
+            {
+              "feature": "mail",
+              "contribution": 0.1953
+            },
+            {
+              "feature": "the",
+              "contribution": -0.183
+            },
+            {
+              "feature": "message",
+              "contribution": 0.1638
+            }
+          ]
+        },
+        {
+          "id": "6a3f6cf478463484",
+          "top_model_terms": [
+            {
+              "feature": "document",
+              "contribution": 0.3594
+            },
+            {
+              "feature": "invoice",
+              "contribution": 0.276
+            },
+            {
+              "feature": "shipping",
+              "contribution": 0.2502
+            },
+            {
+              "feature": "list",
+              "contribution": -0.1911
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "url": {
+    "task": "url",
+    "held_out_count": 6320,
+    "threshold": 0.52,
+    "precision": 0.9682,
+    "recall": 0.903,
+    "f1": 0.9345,
+    "confusion_matrix": {
+      "true_negative": 3060,
+      "false_positive": 94,
+      "false_negative": 307,
+      "true_positive": 2859
+    },
+    "false_positive_rate": 0.0298,
+    "errors": {
+      "false_positives": [
+        {
+          "id": "4835ba300d2dd290",
+          "phishing_probability": 0.984
+        },
+        {
+          "id": "5e750ee750486315",
+          "phishing_probability": 0.9507
+        },
+        {
+          "id": "d2b3f5c4d262d0ca",
+          "phishing_probability": 0.9355
+        },
+        {
+          "id": "158157663f20f85d",
+          "phishing_probability": 0.9123
+        },
+        {
+          "id": "0955b9cb6e9c2356",
+          "phishing_probability": 0.8728
+        },
+        {
+          "id": "00230ab07ea4d984",
+          "phishing_probability": 0.8662
+        },
+        {
+          "id": "9abf16b906e64b1d",
+          "phishing_probability": 0.8625
+        },
+        {
+          "id": "5d7be25db3c0a4e3",
+          "phishing_probability": 0.8531
+        },
+        {
+          "id": "4ca7ad3aaa5cabdc",
+          "phishing_probability": 0.8427
+        },
+        {
+          "id": "6fd6076497b04bc5",
+          "phishing_probability": 0.8313
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "7dbcc74c4ad9c1de",
+          "phishing_probability": 0.0553
+        },
+        {
+          "id": "4b01bf715b186c8b",
+          "phishing_probability": 0.0589
+        },
+        {
+          "id": "fe70ab1207ac77cb",
+          "phishing_probability": 0.0628
+        },
+        {
+          "id": "f4f00a96b01d12e4",
+          "phishing_probability": 0.0927
+        },
+        {
+          "id": "c1a9d8f01052611b",
+          "phishing_probability": 0.0944
+        },
+        {
+          "id": "14d64db8a7b8cfd1",
+          "phishing_probability": 0.0954
+        },
+        {
+          "id": "13a2d14db8d9626a",
+          "phishing_probability": 0.1044
+        },
+        {
+          "id": "148909e0bb541dfc",
+          "phishing_probability": 0.1098
+        },
+        {
+          "id": "6c5960cfdacd07b2",
+          "phishing_probability": 0.115
+        },
+        {
+          "id": "0461a9175f69aeca",
+          "phishing_probability": 0.1309
+        }
+      ]
+    },
+    "training_count": 20518,
+    "validation_count": 5130,
+    "validation_fpr_limit": 0.03,
+    "hostname_overlap": 0,
+    "error_review": {
+      "false_positives": [
+        {
+          "id": "4835ba300d2dd290",
+          "top_model_features": [
+            {
+              "feature": "At signs",
+              "value": 3.0,
+              "contribution": 5.1532
+            },
+            {
+              "feature": "Query length",
+              "value": 400.0,
+              "contribution": 3.2798
+            },
+            {
+              "feature": "Query parameters",
+              "value": 12.0,
+              "contribution": -2.4675
+            },
+            {
+              "feature": "Hostname length",
+              "value": 17.0,
+              "contribution": -0.5197
+            }
+          ]
+        },
+        {
+          "id": "5e750ee750486315",
+          "top_model_features": [
+            {
+              "feature": "Hostname length",
+              "value": 15.0,
+              "contribution": -0.7795
+            },
+            {
+              "feature": "Hostname digits",
+              "value": 0.0,
+              "contribution": -0.5001
+            },
+            {
+              "feature": "Path depth",
+              "value": 1.0,
+              "contribution": -0.3903
+            },
+            {
+              "feature": "URL text: .php",
+              "value": 0.07155912665177072,
+              "contribution": 0.318
+            }
+          ]
+        },
+        {
+          "id": "d2b3f5c4d262d0ca",
+          "top_model_features": [
+            {
+              "feature": "Hostname length",
+              "value": 13.0,
+              "contribution": -1.0393
+            },
+            {
+              "feature": "Hostname digits",
+              "value": 3.0,
+              "contribution": 0.7096
+            },
+            {
+              "feature": "Path depth",
+              "value": 2.0,
+              "contribution": -0.2093
+            },
+            {
+              "feature": "URL text: .ht",
+              "value": 0.0668570663145667,
+              "contribution": 0.1693
+            }
+          ]
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "7dbcc74c4ad9c1de",
+          "top_model_features": [
+            {
+              "feature": "Hostname length",
+              "value": 17.0,
+              "contribution": -0.5197
+            },
+            {
+              "feature": "Hostname digits",
+              "value": 0.0,
+              "contribution": -0.5001
+            },
+            {
+              "feature": "Path depth",
+              "value": 2.0,
+              "contribution": -0.2093
+            },
+            {
+              "feature": "URL text: /pr",
+              "value": 0.10262847464785528,
+              "contribution": -0.1551
+            }
+          ]
+        },
+        {
+          "id": "4b01bf715b186c8b",
+          "top_model_features": [
+            {
+              "feature": "Hostname length",
+              "value": 16.0,
+              "contribution": -0.6496
+            },
+            {
+              "feature": "Hostname digits",
+              "value": 0.0,
+              "contribution": -0.5001
+            },
+            {
+              "feature": "Path length",
+              "value": 99.0,
+              "contribution": -0.2252
+            },
+            {
+              "feature": "Path depth",
+              "value": 4.0,
+              "contribution": 0.1528
+            }
+          ]
+        },
+        {
+          "id": "fe70ab1207ac77cb",
+          "top_model_features": [
+            {
+              "feature": "Hostname digits",
+              "value": 0.0,
+              "contribution": -0.5001
+            },
+            {
+              "feature": "Path length",
+              "value": 137.0,
+              "contribution": -0.3649
+            },
+            {
+              "feature": "Subdomain levels",
+              "value": 2.0,
+              "contribution": -0.2513
+            },
+            {
+              "feature": "Hostname dots",
+              "value": 3.0,
+              "contribution": -0.2156
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "target": "1 means phishing",
+  "threshold": {
+    "email": 0.5,
+    "url": 0.52
+  },
+  "limitations": [
+    "Email sources still correlate with labels; the mixed-class source contains only 100 unique messages after deduplication.",
+    "Historical corpora and a balanced URL sample do not reflect current prevalence or attacks.",
+    "The URL model still has a substantial false-positive rate; review positive results manually."
+  ]
+}

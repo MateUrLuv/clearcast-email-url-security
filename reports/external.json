@@ -1,0 +1,182 @@
+{
+  "url": {
+    "task": "url_external",
+    "held_out_count": 834,
+    "threshold": 0.52,
+    "precision": 0.8567,
+    "recall": 0.6763,
+    "f1": 0.7559,
+    "confusion_matrix": {
+      "true_negative": 332,
+      "false_positive": 51,
+      "false_negative": 146,
+      "true_positive": 305
+    },
+    "false_positive_rate": 0.1332,
+    "errors": {
+      "false_positives": [
+        {
+          "id": "93e5716da2e3b39a",
+          "phishing_probability": 0.967
+        },
+        {
+          "id": "60215d75838fcd1d",
+          "phishing_probability": 0.948
+        },
+        {
+          "id": "7c7aad5dcd3d94ec",
+          "phishing_probability": 0.9421
+        },
+        {
+          "id": "9b597e523344611d",
+          "phishing_probability": 0.9416
+        },
+        {
+          "id": "469fa4e80358c664",
+          "phishing_probability": 0.9218
+        },
+        {
+          "id": "e696d75cdd8b003c",
+          "phishing_probability": 0.8948
+        },
+        {
+          "id": "12144b0881d57d06",
+          "phishing_probability": 0.8896
+        },
+        {
+          "id": "5bfaa8fa230d4559",
+          "phishing_probability": 0.8838
+        },
+        {
+          "id": "3ffb85a242a17001",
+          "phishing_probability": 0.8553
+        },
+        {
+          "id": "c58f0a8534a1ba83",
+          "phishing_probability": 0.8429
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "7fa39e41319b2204",
+          "phishing_probability": 0.0415
+        },
+        {
+          "id": "bfbdb539c59dc223",
+          "phishing_probability": 0.0469
+        },
+        {
+          "id": "9924d5c9352fa7a6",
+          "phishing_probability": 0.0555
+        },
+        {
+          "id": "743ef89708875cdf",
+          "phishing_probability": 0.0578
+        },
+        {
+          "id": "696c4b9ef3f96ecd",
+          "phishing_probability": 0.0725
+        },
+        {
+          "id": "2f668016ded82cd6",
+          "phishing_probability": 0.105
+        },
+        {
+          "id": "435718681d9a7840",
+          "phishing_probability": 0.1258
+        },
+        {
+          "id": "5f28bea58918646a",
+          "phishing_probability": 0.1286
+        },
+        {
+          "id": "61d6b72e11a8a285",
+          "phishing_probability": 0.1389
+        },
+        {
+          "id": "db1ae23caf41ca90",
+          "phishing_probability": 0.1518
+        }
+      ]
+    },
+    "source": "https://huggingface.co/datasets/phreshphish/phreshphish/resolve/main/data/test-000.parquet",
+    "source_count": 1000,
+    "excluded_seen_or_invalid": 166,
+    "hostname_overlap_with_training_source": 0
+  },
+  "email": {
+    "task": "email_external",
+    "held_out_count": 283,
+    "threshold": 0.5,
+    "precision": 0.9878,
+    "recall": 0.7105,
+    "f1": 0.8265,
+    "confusion_matrix": {
+      "true_negative": 168,
+      "false_positive": 1,
+      "false_negative": 33,
+      "true_positive": 81
+    },
+    "false_positive_rate": 0.0059,
+    "errors": {
+      "false_positives": [
+        {
+          "id": "d85ecaf7436db018",
+          "phishing_probability": 0.5042
+        }
+      ],
+      "false_negatives": [
+        {
+          "id": "acb00fd04632dd61",
+          "phishing_probability": 0.0476
+        },
+        {
+          "id": "801f2677a92855a3",
+          "phishing_probability": 0.0652
+        },
+        {
+          "id": "0abf7bd560b633c6",
+          "phishing_probability": 0.068
+        },
+        {
+          "id": "f52105579279b573",
+          "phishing_probability": 0.0696
+        },
+        {
+          "id": "2413bec11ec43bc3",
+          "phishing_probability": 0.0697
+        },
+        {
+          "id": "53fa60c0f4e9b2a1",
+          "phishing_probability": 0.0727
+        },
+        {
+          "id": "0ef65f6105ea4692",
+          "phishing_probability": 0.0756
+        },
+        {
+          "id": "e3f2cdfb80447603",
+          "phishing_probability": 0.0817
+        },
+        {
+          "id": "fd53b5676936c450",
+          "phishing_probability": 0.0875
+        },
+        {
+          "id": "e138c28569b135db",
+          "phishing_probability": 0.0926
+        }
+      ]
+    },
+    "source": "https://zenodo.org/api/records/15235123/files/phishing_nlp_dataset.xlsx/content",
+    "source_count": 624,
+    "excluded_other_classes_or_invalid_or_seen": 341,
+    "training_text_overlap": 0,
+    "note": "Only Phishing and NOT-Malicious General Class messages are in scope; other malicious classes are excluded."
+  },
+  "limitations": [
+    "These datasets differ in collection process and prevalence from the training data.",
+    "The email external set includes email- and SMS-like messages; the selected binary subset is small.",
+    "Model selection during this project considered external results, so repeat on a future untouched source before claiming deployment performance."
+  ]
+}
