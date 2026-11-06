@@ -7,7 +7,7 @@
 3. `ml/url_model.py` extracts character n-grams and numeric values from the URL string and trains a separate logistic regression classifier. No email content, DNS query, or webpage is involved.
 4. `ml/evaluate.py` chooses the URL threshold on a hostname-separated validation set with a 3% false-positive target, then calculates untouched test metrics and selects errors for review.
 5. `ml/explanations.py` multiplies the actual text and structural feature values by their trained linear coefficients. The signed values are exact contributions to phishing log-odds, before rounding and the displayed top-feature limit.
-6. `ml/external_eval.py` tests the saved artifacts against separate-source data after excluding overlaps. `ml/email_urls.py` extracts up to five HTTP(S) links from an email without opening them. `app.py` displays the email verdict from the email model and separate URL verdicts for those links, then shows learned contributions and evaluation metrics.
+6. `ml/external_eval.py` tests the saved artifacts against separate-source data after excluding overlaps. `ml/email_urls.py` extracts up to five visible HTTP/HTTPS URLs, `www.` links, and bare dotted hostnames from text. `email_import.py` parses a user-selected `.eml` locally and also extracts HTTP/HTTPS destinations from HTML anchor `href` attributes. `app.py` displays the email verdict from the email model and separate URL verdicts for discovered candidates, then shows learned contributions and evaluation metrics. No URL is fetched.
 
 The models share only the label convention: `1` means phishing and `0` means legitimate. Each model has a separate artifact and input pipeline.
 
@@ -19,4 +19,8 @@ The model artifacts use `joblib`; only load artifacts from trusted repository co
 
 ## Decision boundaries
 
-The email verdict comes only from the email model. Embedded URLs are independent evidence, never hidden extra weights in the email verdict. Direct URL submissions use the URL model alone. The 0.52 URL decision threshold was chosen from validation data before the final test evaluation. The app does not visit URLs or use a threat-feed lookup.
+The email verdict comes only from the email model. Embedded URLs are independent evidence, never hidden extra weights in the email verdict. Direct URL submissions use the URL model alone. The 0.52 URL decision threshold was chosen from validation data before the final test evaluation. The app does not visit URLs or use a threat-feed lookup. Link discovery is bounded and does not cover image/QR links, obfuscated hostnames, or every possible HTML construct.
+
+## Review history
+
+`review_history.py` stores local review metadata and deterministic SHA-256 fingerprints in `.clearcast/review_history.sqlite3`. It does not store raw messages, senders, or complete URL strings. Because fingerprints are deterministic and the database is not encrypted, history is content-minimizing, not encrypted or guaranteed anonymous. Email fingerprints normalize Unicode, case, and whitespace; URL fingerprints use `normalized_url`.

@@ -1,7 +1,11 @@
 """Extract URL candidates from email text without fetching them."""
 import re
 
-URL_PATTERN = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
+URL_PATTERN = re.compile(
+    r"(?:https?://|www\.)[^\s<>\"']+"
+    r"|(?<![\w@.-])(?:[\w-]+\.)+[a-z]{2,}(?::\d+)?(?:[/?#][^\s<>\"']*)?",
+    re.IGNORECASE,
+)
 TRAILING = ".,;:!?)]}"
 
 

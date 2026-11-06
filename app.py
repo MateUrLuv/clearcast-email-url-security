@@ -7,14 +7,17 @@ import joblib
 import pandas as pd
 import streamlit as st
 
+from email_import import parse_eml
 from ml.email_urls import extract_urls
 from ml.explanations import explain_email, explain_url
 from ml.url_model import normalized_url
+from review_history import ReviewHistory
 
 ROOT = Path(__file__).resolve().parent
 REPORT = json.loads((ROOT / "reports" / "held_out.json").read_text())
 URL_THRESHOLD = REPORT["url"]["threshold"]
 EXTERNAL_PATH = ROOT / "reports" / "external.json"
+HISTORY = ReviewHistory(ROOT / ".clearcast" / "review_history.sqlite3")
 
 st.set_page_config(
     page_title="ClearCast | Email security",
@@ -141,6 +144,11 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 .cc-assessment-copy { color: var(--muted); font-size: .88rem; margin-top: .24rem; line-height: 1.5; }
 .cc-threshold-note { color: var(--muted); font-size: .81rem; margin-top: .45rem; }
 .cc-next-step { color: var(--ink); font-size: .82rem; margin-top: .38rem; line-height: 1.5; }
+.cc-positive-signal {
+  color: #713a32; background: var(--coral-soft); border-radius: 8px;
+  padding: .62rem .75rem; margin-top: .65rem; font-size: .8rem; line-height: 1.5;
+}
+.cc-positive-signal strong { color: #713a32; }
 .cc-gauge { grid-column: 1 / -1; margin: .4rem 0 0; }
 .cc-gauge-track { height: 8px; background: #e4e5dd; border-radius: 20px; position: relative; }
 .cc-gauge-fill { height: 8px; border-radius: 20px; }
@@ -190,20 +198,46 @@ def load_model(name):
     return joblib.load(ROOT / "artifacts" / f"{name}_model.joblib")
 
 
-def verdict(score, threshold):
+def verdict(score, threshold, subject="email"):
     if score >= threshold:
         return "Review as phishing", "The model found phishing-like patterns. Check the context before acting."
-    return "No phishing signal detected", "The model found fewer phishing-like patterns. This is not a safety guarantee."
+    return (
+        "Below the phishing decision threshold",
+        f"The model did not classify this {subject} as phishing. That does not mean it is legitimate or safe.",
+    )
 
 
-def show_score(score, threshold, model_name):
-    label, detail = verdict(score, threshold)
+def show_score(score, threshold, model_name, contributions=None):
+    subject = "email" if model_name == "Email" else "URL"
+    label, detail = verdict(score, threshold, subject)
     positive = score >= threshold
     next_step = (
-        "Don't use the link or share information until the sender is verified through a trusted channel."
-        if positive else
-        "This result is not a safety guarantee; verify anything unexpected independently before acting."
+        "Independently verify unexpected requests for payment, financial details, credentials, "
+        "or urgent action through a trusted channel before responding."
     )
+    positive_contributions = [
+        item for item in (contributions or [])
+        if float(item["contribution"]) > 0
+    ]
+    positive_signal_note = ""
+    if positive_contributions:
+        visible_signals = positive_contributions[:3]
+        signal_text = ", ".join(
+            f'{html.escape(str(item["feature"]))} '
+            f'({float(item["contribution"]):+.3f})'
+            for item in visible_signals
+        )
+        remaining_count = len(positive_contributions) - len(visible_signals)
+        remaining_text = (
+            f"; {remaining_count} more shown in the contribution bars below"
+            if remaining_count else
+            "; see the contribution bars below"
+        )
+        positive_signal_note = (
+            '<div class="cc-positive-signal"><strong>Features raising the score:</strong> '
+            f'{signal_text}{remaining_text}. These are model contributions, not proof that '
+            'the message is malicious.</div>'
+        )
     st.markdown(
         f'<section class="cc-result-panel" aria-label="{html.escape(model_name)} analysis result">'
         f'<div><div class="cc-result-score-label">{html.escape(model_name)} model score</div>'
@@ -213,6 +247,7 @@ def show_score(score, threshold, model_name):
         f'<div class="cc-assessment-label">Assessment</div>'
         f'<div class="cc-assessment-title">{html.escape(label)}</div>'
         f'<div class="cc-assessment-copy">{html.escape(detail)}</div></div>'
+        f'{positive_signal_note}'
         f'<div class="cc-threshold-note">Decision threshold: <strong>{threshold:.0%}</strong></div>'
         f'<div class="cc-next-step"><strong>Suggested next step:</strong> {html.escape(next_step)}</div></div>'
         f'<div class="cc-gauge"><div class="cc-gauge-track">'
@@ -306,7 +341,11 @@ def show_embedded_urls(links):
     for item in links:
         link = item["url"]
         score = item["score"]
-        with st.expander(f"{'Review' if score >= URL_THRESHOLD else 'Below threshold'} · {score:.1%} · {link[:90]}"):
+        repeat_label = " · Seen before" if item.get("repeat") else ""
+        with st.expander(
+            f"{'Review' if score >= URL_THRESHOLD else 'Below threshold'}"
+            f"{repeat_label} · {score:.1%} · {link[:90]}"
+        ):
             st.code(link, language=None)
             show_score(score, URL_THRESHOLD, "URL")
             st.markdown("**What influenced this URL score**")
@@ -326,23 +365,39 @@ def analyze_email_callback():
 
     model = load_model("email")
     score = float(model.predict_proba([content])[0, 1])
+    imported_fingerprint = st.session_state.get("email_imported_content_fingerprint")
+    imported_links = (
+        st.session_state.get("email_imported_links", [])
+        if imported_fingerprint == HISTORY.fingerprint("Email", content)
+        else []
+    )
     links = []
     url_model = None
-    for link in extract_urls(content):
+    candidates = list(dict.fromkeys(extract_urls(content) + imported_links))[:5]
+    for link in candidates:
         try:
             normalized_url(link)
         except ValueError:
             continue
         if url_model is None:
             url_model = load_model("url")
+        url_score = float(url_model.predict_proba([link])[0, 1])
         links.append({
             "url": link,
-            "score": float(url_model.predict_proba([link])[0, 1]),
+            "score": url_score,
+            "repeat": HISTORY.record(
+                "URL", link, url_score, URL_THRESHOLD, "URL in email"
+            ),
         })
+    email_fingerprint_text = f"{subject}\n{body}".strip()
     st.session_state.email_analysis = {
         "score": score,
         "features": explain_email(model, content, 10),
         "links": links,
+        "repeat": HISTORY.record(
+            "Email", email_fingerprint_text, score, REPORT["email"]["threshold"],
+            "Email investigation",
+        ),
     }
     st.session_state.pop("email_analysis_error", None)
 
@@ -357,9 +412,13 @@ def analyze_url_callback():
         return
 
     model = load_model("url")
+    score = float(model.predict_proba([url])[0, 1])
     st.session_state.url_analysis = {
         "url": url,
-        "score": float(model.predict_proba([url])[0, 1]),
+        "score": score,
+        "repeat": HISTORY.record(
+            "URL", url, score, URL_THRESHOLD, "URL investigation"
+        ),
     }
     st.session_state.pop("url_analysis_error", None)
 
@@ -380,7 +439,12 @@ with st.sidebar:
     st.markdown("**Workspace**")
     section = st.radio(
         "Choose a workspace",
-        ["Email investigation", "URL investigation", "Evidence & evaluation"],
+        [
+            "Email investigation",
+            "URL investigation",
+            "Review history",
+            "Evidence & evaluation",
+        ],
         index=0,
         label_visibility="collapsed",
         key="navigation_section",
@@ -410,7 +474,15 @@ if section == "Email investigation":
     if email_analysis:
         st.markdown('<div class="cc-result-rule"></div>', unsafe_allow_html=True)
         st.markdown('<div class="cc-overline">Email assessment</div>', unsafe_allow_html=True)
-        show_score(email_analysis["score"], REPORT["email"]["threshold"], "Email")
+        if email_analysis.get("repeat"):
+            st.info(
+                "This email matches a previous local review. Case and whitespace differences "
+                "are ignored for repeat matching."
+            )
+        show_score(
+            email_analysis["score"], REPORT["email"]["threshold"], "Email",
+            email_analysis["features"],
+        )
         st.markdown("#### What influenced the email score")
         show_contributions(email_analysis["features"])
         st.markdown('<div class="cc-section-break"></div>', unsafe_allow_html=True)
@@ -444,9 +516,64 @@ if section == "Email investigation":
             st.markdown('<div class="cc-workspace-heading">Paste email</div>', unsafe_allow_html=True)
             st.markdown(
                 '<div class="cc-workspace-help">Enter the subject and message body below. '
-                'No inbox access or upload is needed.</div>',
+                'Paste the text or load it from a downloaded original email file.</div>',
                 unsafe_allow_html=True,
             )
+            with st.expander("Import an original Gmail message (.eml)"):
+                st.caption(
+                    "In Gmail, open the message, choose More (⋮) → Download message, "
+                    "then select the .eml file here. No Gmail sign-in or inbox access is used."
+                )
+                uploaded_email = st.file_uploader(
+                    "Original email file",
+                    type=["eml"],
+                    key="email_eml_upload",
+                    help="ClearCast reads the message file locally and does not upload it elsewhere.",
+                )
+                if uploaded_email is not None:
+                    try:
+                        imported_email = parse_eml(uploaded_email.getvalue())
+                    except ValueError as error:
+                        st.error(str(error))
+                    else:
+                        st.caption(
+                            f"From: {imported_email.sender or 'Not provided in message headers'}"
+                        )
+                        if imported_email.authentication_results:
+                            with st.expander(
+                                "Authentication results copied from original headers"
+                            ):
+                                st.caption(
+                                    "These are displayed as supplied in the email headers. "
+                                    "ClearCast does not independently verify them."
+                                )
+                                for header_value in imported_email.authentication_results:
+                                    st.code(header_value, language=None)
+                        if st.button(
+                            "Load email into the fields",
+                            use_container_width=True,
+                            key="load_original_email",
+                        ):
+                            st.session_state["email_subject"] = imported_email.subject
+                            st.session_state["email_body"] = imported_email.body
+                            st.session_state["email_imported_links"] = list(imported_email.links)
+                            st.session_state["email_imported_content_fingerprint"] = (
+                                HISTORY.fingerprint(
+                                    "Email",
+                                    f"{imported_email.subject}\n{imported_email.body}".strip(),
+                                )
+                            )
+                            st.session_state.pop("email_analysis", None)
+                            st.session_state.pop("email_analysis_error", None)
+                            link_note = (
+                                f" {len(imported_email.links)} hidden hyperlink destination(s) "
+                                "will also be checked separately."
+                                if imported_email.links else ""
+                            )
+                            st.success(
+                                "Original email loaded. Select Analyze email to review it."
+                                + link_note
+                            )
             with st.form("email_investigation", border=False):
                 subject = st.text_input("Subject", key="email_subject", placeholder="Subject line")
                 body = st.text_area(
@@ -458,11 +585,6 @@ if section == "Email investigation":
                     "Analyze email", type="primary", use_container_width=True,
                     on_click=analyze_email_callback,
                 )
-            st.markdown(
-                '<div class="cc-gmail-note">Import from Gmail is coming later. '
-                'This demo uses pasted email text only.</div>',
-                unsafe_allow_html=True,
-            )
     with context_col:
         st.markdown("#### What happens next")
         st.markdown(
@@ -470,8 +592,9 @@ if section == "Email investigation":
             "are shown with the result."
         )
         st.markdown(
-            "Links are detected from the pasted text and assessed by a separate URL model. "
-            "The app does not open them."
+            "The app finds visible URLs in email text even when they are not clickable. "
+            "For imported .eml files, hidden HTML hyperlink destinations are included too. "
+            "Each URL is assessed separately and never opened."
         )
         st.markdown(
             '<div class="cc-small-note"><strong>How to read the score</strong><br>'
@@ -492,6 +615,8 @@ elif section == "URL investigation":
     url_analysis = st.session_state.get("url_analysis")
     if url_analysis:
         st.markdown('<div class="cc-result-rule"></div>', unsafe_allow_html=True)
+        if url_analysis.get("repeat"):
+            st.info("This exact URL has appeared in ClearCast's local review history.")
         st.markdown(f"**Address reviewed:** `{url_analysis['url']}`")
         show_score(url_analysis["score"], URL_THRESHOLD, "URL")
         st.markdown("#### What influenced the URL score")
@@ -545,6 +670,57 @@ elif section == "URL investigation":
             'webpage contains.</div>',
             unsafe_allow_html=True,
         )
+
+elif section == "Review history":
+    st.markdown('<div class="cc-overline">Local records</div>', unsafe_allow_html=True)
+    st.title("Review history")
+    st.markdown(
+        '<div class="cc-intro">See when an email or URL was reviewed before and whether '
+        'the same normalized email text or URL appeared again.</div>',
+        unsafe_allow_html=True,
+    )
+    st.info(
+        "History stays in a local SQLite file. ClearCast saves timestamps, item type, "
+        "source, scores, decisions, and SHA-256 fingerprints for repeat matching—not "
+        "email bodies, senders, or full URLs. Fingerprints are deterministic, not "
+        "anonymization or encryption; this local history file is not encrypted."
+    )
+    st.caption(
+        "Showing the most recent 100 reviews. Email repeat matching ignores case and whitespace."
+    )
+    history_rows = HISTORY.recent()
+    if history_rows:
+        history_frame = pd.DataFrame(history_rows)
+        history_frame["reviewed_at"] = history_frame["reviewed_at"].map(
+            lambda value: pd.Timestamp(value).strftime("%Y-%m-%d %H:%M:%S UTC")
+        )
+        history_frame["score"] = history_frame["score"].map(lambda value: f"{value:.1%}")
+        history_frame["threshold"] = history_frame["threshold"].map(
+            lambda value: f"{value:.0%}"
+        )
+        history_frame["repeat_status"] = history_frame["prior_reviews"].map(
+            lambda count: f"Seen before ({count} earlier)" if count else "First recorded review"
+        )
+        history_frame = history_frame.rename(columns={
+            "reviewed_at": "Reviewed (UTC)",
+            "item_type": "Item",
+            "source": "Source",
+            "score": "Model score",
+            "threshold": "Decision threshold",
+            "assessment": "Assessment",
+            "repeat_status": "Repeat check",
+        })
+        history_frame = history_frame.drop(columns=["prior_reviews"])
+        st.dataframe(history_frame, use_container_width=True, hide_index=True)
+    else:
+        st.caption("No reviews have been saved on this computer yet.")
+
+    st.markdown("---")
+    confirm_clear = st.checkbox("I understand this deletes all local review history.")
+    if st.button("Clear local review history", disabled=not confirm_clear):
+        HISTORY.clear()
+        st.success("Local review history cleared.")
+        st.rerun()
 
 else:
     st.markdown('<div class="cc-overline">Model evidence</div>', unsafe_allow_html=True)

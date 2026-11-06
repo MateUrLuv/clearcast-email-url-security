@@ -10,13 +10,41 @@ ClearCast is a local-first Streamlit application with separate machine-learning 
 
 ## What ClearCast does
 
-- **Email investigation:** paste a subject and message body to get an assessment and see which words and phrases influenced the email model.
-- **Independent link checks:** HTTP/HTTPS links detected in a pasted email are scored separately by the URL model. URL scores never affect the email verdict.
+- **Email investigation:** paste a subject and message body, or import Gmail's downloaded original email (`.eml`), to get an assessment and see which words and phrases influenced the email model.
+- **Independent link checks:** visible HTTP/HTTPS URLs, `www.` links, and bare dotted hostnames in pasted text are scored separately from the email. Imported emails also contribute hidden HTML hyperlink destinations. URL scores never affect the email verdict.
 - **URL investigation:** paste a URL to review learned character patterns and structural-feature contributions.
+- **Review history:** see prior assessments, flag repeated email text or URLs, and clear the local history.
 - **Evaluation:** inspect held-out test results and a separate external-source stress test, including confusion matrices and documented limitations.
 - **Local sample inputs:** load suspicious or legitimate examples to try the workflows.
 
 ClearCast analyzes URL text only. **It does not visit URLs, follow redirects, or retrieve web page content.**
+
+## New: review original Gmail messages locally
+
+You can review the original message rather than copying text out of Gmail:
+
+1. In Gmail, open the email and choose **More (⋮) → Download message**.
+2. In ClearCast, choose **Email investigation** and expand **Import an original Gmail message (.eml)**.
+3. Select the downloaded `.eml` file, inspect the sender/header context, and choose **Load email into the fields**.
+4. Choose **Analyze email**. The email assessment and any discovered link assessments are shown in ClearCast.
+
+This is a local file import—not a Gmail account connection. There is no Google sign-in, OAuth, inbox permission, or Gmail API access. Sender and authentication-result headers such as SPF/DKIM/DMARC are displayed as copied from the file; **ClearCast does not independently verify them**.
+
+## New: find visible and hidden email links
+
+For pasted email text, ClearCast looks for visible HTTP/HTTPS URLs, `www.` links, and bare dotted hostnames. A URL does not need to be clickable to be found. For an imported `.eml`, ClearCast also extracts HTTP/HTTPS targets from HTML anchor `href` attributes, including a hidden address behind text such as **“click here.”**
+
+Each extracted address is sent to the separate URL model; it does not change the email score. ClearCast never opens, resolves, or fetches a link. Link discovery is deliberately bounded to five candidates per email. It is not a full HTML or image analysis system: it does not extract links encoded only in images/QR codes, obfuscated text such as `example dot com`, or arbitrary non-HTTP schemes. Review the original message and links carefully.
+
+## New: revisit prior checks
+
+The **Review history** workspace shows the most recent 100 email and URL assessments, with the time, source, score, threshold, assessment, and whether an earlier matching review exists. ClearCast also flags a repeat while showing its result.
+
+- Email matching normalizes Unicode, ignores case, and collapses whitespace before comparing the subject and body.
+- URL matching uses ClearCast's URL normalization, so a bare hostname and the same address with an `https://` scheme can match.
+- The database is local to the computer running ClearCast, at `.clearcast/review_history.sqlite3`.
+- To make repeat checking possible without retaining email bodies or full URLs, the database stores deterministic SHA-256 fingerprints along with review metadata. It does not store raw messages, senders, or complete URL strings.
+- **Important privacy limitation:** a deterministic hash is not encryption or guaranteed anonymization. Someone who already knows a likely message or URL can hash guesses and compare them. The SQLite file itself is not encrypted. Clear history in **Review history → Clear local review history**, and do not use this feature on a shared or untrusted computer if that storage is not appropriate.
 
 ## Screenshots
 
@@ -153,10 +181,12 @@ python -m streamlit run app.py --server.port 8502
 
 ## How it works
 
-- **Email model:** combines subject and body text, transforms words and phrases with TF-IDF, then classifies them with logistic regression.
-- **URL model:** combines URL character n-grams with numeric structural features in a separate logistic-regression classifier.
-- **Explanations:** shows signed learned feature contributions from the corresponding model.
-- **Decision thresholds:** the email threshold is 0.50; the URL threshold is 0.52 and was selected using validation data.
+- **Email model:** combines subject and readable body text, transforms word and phrase patterns with TF-IDF, then classifies them with a trained logistic-regression model. It does not use embedded URL scores when producing the email score.
+- **URL model:** independently combines URL character n-grams and numeric structural features—such as hostname and path structure—in a separate logistic-regression model. It does not use DNS or page contents.
+- **Email explanations:** the bars show signed contributions of learned words and phrases. Positive values push the model output toward the phishing class; negative values push it away. They explain this model's output, not the sender's intent, and a negative feature is not proof of safety.
+- **URL explanations:** text-pattern and structural-feature contributions are shown separately. Positive and negative values describe how the corresponding learned features shift the URL model's output.
+- **Score and threshold:** the score is the model's output for this input, **not a calibrated real-world probability**. It is compared with the displayed decision threshold (email 0.50; URL 0.52, selected using validation data). A score below threshold means the model did not classify the item as phishing; it does not establish that the message or address is legitimate or safe.
+- **Independent verdicts:** an email is assessed by the email model; each discovered link is assessed independently by the URL model. URL results never raise, lower, or override the email result.
 
 The checked-in model artifacts and evaluation reports let you run the app immediately after installing dependencies. Retraining is optional and downloads the public datasets documented in [Data sources and licenses](docs/DATA.md). Do not run training unless you intend to download those datasets and replace model/report files.
 
@@ -188,6 +218,8 @@ GitHub Actions also runs the tests automatically on pushes and pull requests wit
 ```text
 clearcast-email-url-security/
 ├── app.py                       # Streamlit user interface
+├── email_import.py              # Local Gmail .eml parsing, including HTML links
+├── review_history.py            # Content-free local review history
 ├── ml/                          # Models, explanations, training, and evaluation code
 ├── artifacts/                   # Pre-trained email and URL models
 ├── reports/                     # Held-out and external evaluation results
@@ -200,8 +232,11 @@ clearcast-email-url-security/
 
 ## Privacy and project scope
 
-- Email is analyzed from text pasted into the local app. It does not access your inbox.
-- **Gmail integration is not implemented.** There is no Google login, OAuth, inbox permission, or email API connection.
+- Email can be pasted or imported as a Gmail-downloaded `.eml` file. In Gmail, open a message, choose **More (⋮) → Download message**, then load that file in ClearCast. The app does not access your inbox.
+- There is no Google login, OAuth, inbox permission, or Gmail API connection. The `.eml` file is processed by the ClearCast app server; when running locally, that server is on your own computer.
+- Sender and authentication-result headers are displayed as supplied in the file. ClearCast does not independently verify SPF, DKIM, or DMARC.
+- For imported MIME emails, visible URLs and HTTP/HTTPS destinations in HTML anchor `href` attributes are scored separately without visiting them.
+- Review history stores UTC timestamps, item type, source, score, threshold, assessment, and SHA-256 fingerprints in `.clearcast/review_history.sqlite3`. It does not store message bodies, senders, or full URLs. Fingerprints are deterministic, not encryption or anonymization, and the local file is not encrypted; use **Review history → Clear local review history** to delete its records.
 - URLs are not opened or fetched. The URL model only uses the URL string.
 - A score is not proof of malicious intent or proof of safety. Use human judgment.
 
